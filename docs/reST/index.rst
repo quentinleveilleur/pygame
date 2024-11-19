@@ -211,3 +211,113 @@ Reference
 .. _Install: ../wiki/GettingStarted#Pygame%20Installation
 
 .. _LGPL License: LGPL.txt
+
+import pygame
+import random
+
+# Initialisation de Pygame
+pygame.init()
+
+# Définir les dimensions de la fenêtre
+screen_width = 800
+screen_height = 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("Jeu de tir avec pistolet rouge")
+
+# Définir les couleurs
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+
+# Charger les images
+gun_image = pygame.image.load('gun_red.png')  # Assurez-vous d'avoir l'image du pistolet rouge
+target_image = pygame.image.load('https://img.freepik.com/photos-premium/pistolet-rouge-au-design-futuriste-fond-sombre-ia-generative_7023-106511.jpg')  # Assurez-vous d'avoir l'image de la cible
+
+# Paramètres du jeu
+gun_x, gun_y = 50, screen_height // 2  # Position initiale du pistolet
+bullet_width, bullet_height = 10, 5
+bullet_speed = 10
+bullets = []
+
+# Classe pour la cible
+class Target(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = target_image
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randint(600, 780)
+        self.rect.y = random.randint(50, 550)
+        self.speed = random.randint(1, 3)
+        
+    def update(self):
+        self.rect.x -= self.speed
+        if self.rect.x < 0:
+            self.rect.x = random.randint(600, 780)
+            self.rect.y = random.randint(50, 550)
+
+# Groupe de cibles
+targets = pygame.sprite.Group()
+for _ in range(5):
+    target = Target()
+    targets.add(target)
+
+# Boucle principale du jeu
+running = True
+clock = pygame.time.Clock()
+
+while running:
+    screen.fill(WHITE)
+
+    # Gestion des événements
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Déplacer le pistolet (haut/bas)
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP] and gun_y > 0:
+        gun_y -= 5
+    if keys[pygame.K_DOWN] and gun_y < screen_height - gun_image.get_height():
+        gun_y += 5
+
+    # Tirer une balle
+    if keys[pygame.K_SPACE]:
+        bullet_x = gun_x + gun_image.get_width()
+        bullet_y = gun_y + gun_image.get_height() // 2
+        bullets.append([bullet_x, bullet_y])
+
+    # Mouvements des balles
+    for bullet in bullets[:]:
+        bullet[0] += bullet_speed
+        if bullet[0] > screen_width:
+            bullets.remove(bullet)
+        else:
+            pygame.draw.rect(screen, RED, pygame.Rect(bullet[0], bullet[1], bullet_width, bullet_height))
+
+    # Mise à jour des cibles
+    targets.update()
+    
+    # Vérification des collisions
+    for target in targets:
+        for bullet in bullets[:]:
+            if target.rect.colliderect(pygame.Rect(bullet[0], bullet[1], bullet_width, bullet_height)):
+                targets.remove(target)
+                bullets.remove(bullet)
+                # Ajouter une nouvelle cible après la destruction
+                new_target = Target()
+                targets.add(new_target)
+
+    # Dessiner le pistolet
+    screen.blit(gun_image, (gun_x, gun_y))
+
+    # Dessiner les cibles
+    targets.draw(screen)
+
+    # Mettre à jour l'affichage
+    pygame.display.update()
+
+    # Limiter les FPS
+    clock.tick(60)
+
+pygame.quit()
+
+
